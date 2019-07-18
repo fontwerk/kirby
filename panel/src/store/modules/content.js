@@ -14,9 +14,6 @@ export default {
     }
   },
   getters: {
-    current: state => {
-      return state.current;
-    },
     exists: state => id => {
       return state.models.hasOwnProperty(id);
     },
@@ -51,6 +48,9 @@ export default {
     },
     originals: (state, getters) => id => {
       return clone(getters.model(id).originals);
+    },
+    value: (state, getters) => (field, id) => {
+      return getters.values(id)[field];
     },
     values: (state, getters) => id => {
       return clone(getters.model(id).values);

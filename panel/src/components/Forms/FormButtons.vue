@@ -78,7 +78,7 @@ export default {
       };
     },
     id() {
-      return this.$store.getters["content/current"];
+      return this.$store.state.content.current;
     },
     isDisabled() {
       return this.$store.state.content.status.interactable === false;
