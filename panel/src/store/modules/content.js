@@ -5,11 +5,13 @@ import clone from "@/helpers/clone.js";
 export default {
   namespaced: true,
   state: {
-    models: {},
     current: null,
-    isDisabled: false,
-    lock: null,
-    unlock: null
+    models: {},
+    status: {
+      interactable: true,
+      lock: null,
+      unlock: null
+    }
   },
   getters: {
     current: state => {
@@ -19,7 +21,9 @@ export default {
       return state.models.hasOwnProperty(id);
     },
     hasChanges: (state, getters) => id => {
-      return Object.keys(getters.model(id).changes).length > 0;
+      id = id || state.current;
+      let changes = getters.model(id).changes;
+      return Object.keys(changes).length > 0;
     },
     id: (state, getters, rootState) => id => {
       if (rootState.languages.current) {
@@ -31,31 +35,25 @@ export default {
     isCurrent: (state) => id => {
       return state.current === id;
     },
-    isDisabled: (state) => {
-      return state.isDisabled === true;
-    },
-    lock: state => {
-      return state.lock;
-    },
     model: (state, getters) => id => {
-      return getters.exists(id)
-        ? state.models[id]
-        : {
-            originals: {},
-            values: {},
-            changes: {},
-            api: null
-          };
+      id = id || state.current;
+
+      if (getters.exists(id) === true) {
+        return state.models[id];
+      }
+
+      return {
+        api: null,
+        originals: {},
+        values: {},
+        changes: {},
+      };
     },
     originals: (state, getters) => id => {
       return clone(getters.model(id).originals);
     },
     values: (state, getters) => id => {
-      id = id || state.current;
       return clone(getters.model(id).values);
-    },
-    unlock: state => {
-      return state.unlock;
     }
   },
   mutations: {
@@ -70,43 +68,36 @@ export default {
     CURRENT(state, id) {
       state.current = id;
     },
-    DELETE_CHANGES(state, id) {
-      Vue.set(state.models[id], "changes", {});
-      Vue.set(state.models[id], "values", clone(state.models[id].originals));
-      localStorage.removeItem("kirby$form$" + id);
-    },
-    IS_DISABLED(state, disabled) {
-      state.isDisabled = disabled;
+    INTERACTABLE(state, interactable) {
+      Vue.set(state.status, "interactable", interactable);
     },
     LOCK(state, lock) {
-      state.lock = lock;
+      Vue.set(state.status, "lock", lock);
     },
-    MOVE(state, ids) {
+    MOVE(state, [from, to]) {
       // move state
-      const model = clone(state.models[ids.old]);
-      Vue.delete(state.models, ids.old);
-      Vue.set(state.models, ids.new, model);
+      const model = clone(state.models[from]);
+      Vue.delete(state.models, from);
+      Vue.set(state.models, to, model);
 
       // move local storage
-      const storage = localStorage.getItem("kirby$form$" + ids.old);
-      localStorage.removeItem("kirby$form$" + ids.old);
-      localStorage.setItem("kirby$form$" + ids.new, storage);
+      const storage = localStorage.getItem("kirby$content$" + from);
+      localStorage.removeItem("kirby$content$" + from);
+      localStorage.setItem("kirby$content$" + to, storage);
     },
     REMOVE(state, id) {
       Vue.delete(state.models, id);
-      localStorage.removeItem("kirby$form$" + id);
+      localStorage.removeItem("kirby$content$" + id);
     },
-    SET_ORIGINALS(state, [id, originals]) {
-      state.models[id].originals = clone(originals);
-    },
-    SET_VALUES(state, [id, values]) {
-      state.models[id].values = clone(values);
+    REVERT(state, id) {
+      Vue.set(state.models[id], "values", clone(state.models[id].originals));
+      Vue.set(state.models[id], "changes", {});
+      localStorage.removeItem("kirby$content$" + id);
     },
     UNLOCK(state, unlock) {
-      state.unlock = unlock;
+      Vue.set(state.status, "unlock", unlock);
     },
     UPDATE(state, [id, field, value]) {
-
       // avoid updating without a valid model
       if (!state.models[id]) {
         return false;
@@ -126,7 +117,7 @@ export default {
       }
 
       localStorage.setItem(
-        "kirby$form$" + id,
+        "kirby$content$" + id,
         JSON.stringify({
           api: state.models[id].api,
           originals: state.models[id].originals,
@@ -146,15 +137,17 @@ export default {
         model.id = context.getters.id(model.id);
       }
 
+      // remove title from model content
       if (model.id.startsWith("pages/") || model.id.startsWith("site")) {
-        // remove title from model content
         delete model.content.title;
       }
 
       context.commit("CREATE", model);
       context.commit("CURRENT", model.id);
-
-      const stored = localStorage.getItem("kirby$form$" + model.id);
+      context.dispatch("load", model);
+    },
+    load(context, model) {
+      const stored = localStorage.getItem("kirby$content$" + model.id);
 
       if (stored) {
         const data = JSON.parse(stored);
@@ -162,27 +155,24 @@ export default {
         Api.get(model.api + "/unlock").then(response => {
           if (response.isUnlocked === true) {
             context.commit("UNLOCK", data.values);
-
-          } else if (data.values) {
-            Object.keys(data.values).forEach(field => {
-              const value = data.values[field];
-              context.commit("UPDATE", [model.id, field, value]);
-            });
+            return;
           }
+
+          Object.keys(data.values || {}).forEach(field => {
+            const value = data.values[field];
+            context.commit("UPDATE", [model.id, field, value]);
+          });
         });
       }
     },
-    disable(context) {
-      context.commit("IS_DISABLED", true);
-    },
-    enable(context) {
-      context.commit("IS_DISABLED", false);
+    interactable(context, interactable = true) {
+      context.commit("INTERACTABLE", interactable);
     },
     lock(context, lock) {
       context.commit("LOCK", lock);
     },
-    move(context, ids) {
-      context.commit("MOVE", ids);
+    move(context, [from, to]) {
+      context.commit("MOVE", [from, to]);
     },
     remove(context, id) {
       context.commit("REMOVE", id);
@@ -193,51 +183,40 @@ export default {
       context.commit("UNLOCK", null);
     },
     revert(context, id) {
-      const model = context.getters.model(id);
-
-      // fetch from api
-      return Api.get(model.api, { select: "content" }).then(response => {
-
-        if (id.startsWith("pages/") || id.startsWith("site")) {
-          // remove title from response content
-          delete response.content.title;
-        }
-
-        context.commit("SET_ORIGINALS", [id, response.content]);
-        context.commit("SET_VALUES", [id, response.content]);
-        context.commit("DELETE_CHANGES", id);
-      });
+      id = id || context.state.current;
+      context.commit("REVERT", id);
     },
     save(context, id) {
-
       id = id || context.state.current;
 
       const model = context.getters.model(id);
 
-      if (context.getters.isCurrent(id)) {
-        if (context.state.isDisabled) {
-          return false;
-        }
+      if (
+        context.getters.isCurrent(id) &&
+        context.state.status.interactable === false
+      ) {
+        return false;
       }
 
-      context.dispatch("disable");
+      context.dispatch("interactable", false);
 
       // Send to api
       return Api
         .patch(model.api, model.values)
         .then(() => {
           context.dispatch("revert", id);
-          context.dispatch("enable");
+          context.dispatch("interactable", true);
         })
         .catch(error => {
-          context.dispatch("enable");
+          context.dispatch("interactable", true);
           throw error;
         });
     },
     unlock(context, unlock) {
       context.commit("UNLOCK", unlock);
     },
-    update(context, [id, field, value]) {
+    update(context, [field, value, id]) {
+      id = id || context.state.current;
       context.commit("UPDATE", [id, field, value]);
     }
   }

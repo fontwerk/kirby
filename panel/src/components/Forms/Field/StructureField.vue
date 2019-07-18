@@ -311,7 +311,7 @@ export default {
       this.$events.$off("keydown.esc", this.escape);
       this.$events.$off("keydown.cmd.s", this.submit);
 
-      this.$store.dispatch("form/enable");
+      this.$store.dispatch("content/interactable", true);
     },
     columnIsEmpty(value) {
       if (value === undefined || value === null || value === "") {
@@ -340,7 +340,7 @@ export default {
     createForm(field) {
       this.$events.$on("keydown.esc", this.escape);
       this.$events.$on("keydown.cmd.s", this.submit);
-      this.$store.dispatch("form/disable");
+      this.$store.dispatch("content/interactable", false);
 
       this.$nextTick(() => {
         if (this.$refs.form) {

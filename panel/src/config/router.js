@@ -25,7 +25,7 @@ router.beforeEach((to, from, next) => {
 
   // reset the form store
   if (to.path !== from.path) {
-    store.dispatch("form/reset");
+    store.dispatch("content/reset");
   }
 
   // keep the last visted path

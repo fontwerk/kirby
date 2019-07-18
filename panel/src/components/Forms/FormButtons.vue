@@ -63,7 +63,7 @@
 export default {
   computed: {
     hasChanges() {
-      return this.$store.getters["form/hasChanges"](this.id);
+      return this.$store.getters["content/hasChanges"]();
     },
     hasLock() {
       return this.form.lock !== null;
@@ -73,15 +73,15 @@ export default {
     },
     form() {
       return {
-        lock: this.$store.getters["form/lock"],
-        unlock: this.$store.getters["form/unlock"]
+        lock: this.$store.state.content.status.lock,
+        unlock: this.$store.state.content.status.unlock
       };
     },
     id() {
-      return this.$store.getters["form/current"];
+      return this.$store.getters["content/current"];
     },
     isDisabled() {
-      return this.$store.getters["form/isDisabled"];
+      return this.$store.state.content.status.interactable === false;
     },
     mode() {
       if (this.hasUnlock === true) {
@@ -137,7 +137,7 @@ export default {
 
         // if content is locked, dispatch info to store
         if (response.locked === true) {
-          this.$store.dispatch("form/lock", {
+          this.$store.dispatch("content/lock", {
             user: response.user,
             email: response.email,
             time: parseInt(response.time, 10),
@@ -156,12 +156,12 @@ export default {
           this.$events.$emit("model.reload");
         }
 
-        this.$store.dispatch("form/lock", null);
+        this.$store.dispatch("content/lock", null);
       });
     },
     setLock() {
       this.$api.patch(this.$route.path + "/lock", null, null, true).catch(() => {
-        this.$store.dispatch("form/revert", this.id);
+        this.$store.dispatch("content/revert");
         this.$store.dispatch("heartbeat/remove", this.setLock);
         this.$store.dispatch("heartbeat/add", this.listen);
       });
@@ -169,21 +169,21 @@ export default {
     removeLock() {
       this.$store.dispatch("heartbeat/remove", this.setLock);
       this.$api.delete(this.$route.path + "/lock", null, null, true).then(() => {
-        this.$store.dispatch("form/lock", null);
+        this.$store.dispatch("content/lock", null);
         this.$store.dispatch("heartbeat/add", this.listen);
       });
     },
     setUnlock() {
       this.$store.dispatch("heartbeat/remove", this.setLock);
       this.$api.patch(this.$route.path + "/unlock", null, null, true).then(() => {
-        this.$store.dispatch("form/lock", null);
+        this.$store.dispatch("content/lock", null);
         this.$store.dispatch("heartbeat/add", this.listen);
       });
     },
     removeUnlock() {
       this.$store.dispatch("heartbeat/remove", this.setLock);
       this.$api.delete(this.$route.path + "/unlock", null, null, true).then(() => {
-        this.$store.dispatch("form/unlock", null);
+        this.$store.dispatch("content/unlock", null);
         this.$store.dispatch("heartbeat/add", this.listen);
       });
     },
@@ -205,11 +205,11 @@ export default {
       document.body.removeChild(link);
     },
     onResolve() {
-      this.$store.dispatch("form/revert", this.id);
+      this.$store.dispatch("content/revert");
       this.removeUnlock();
     },
     onRevert() {
-      this.$store.dispatch("form/revert", this.id);
+      this.$store.dispatch("content/revert");
     },
     onSave(e) {
       if (!e) {
@@ -225,7 +225,7 @@ export default {
       }
 
       this.$store
-        .dispatch("form/save", this.id)
+        .dispatch("content/save")
         .then(() => {
           this.$events.$emit("model.update");
           this.$store.dispatch("notification/success", ":)");
