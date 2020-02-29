@@ -6,6 +6,14 @@ use PHPUnit\Framework\TestCase;
 
 class StrTest extends TestCase
 {
+    public function testAscii()
+    {
+        $this->assertEquals('aouss', Str::ascii('äöüß'));
+        $this->assertEquals('Istanbul', Str::ascii('İstanbul'));
+        $this->assertEquals('istanbul', Str::ascii('i̇stanbul'));
+        $this->assertEquals('Nashata istorija', Str::ascii('Нашата история'));
+    }
+
     public function testAfter()
     {
         $string = 'Hellö Wörld';
@@ -149,6 +157,15 @@ class StrTest extends TestCase
         $this->assertEquals($expected, $result);
     }
 
+    public function testExcerptWithUnicodeChars()
+    {
+        $string   = 'Hellö Wörld text<br>with söme htmäl';
+        $expected = 'Hellö Wörld text …';
+        $result   = Str::excerpt($string, 20);
+
+        $this->assertEquals($expected, $result);
+    }
+
     public function testFloat()
     {
         $this->assertEquals('0', Str::float(false));
@@ -172,6 +189,7 @@ class StrTest extends TestCase
         $this->assertEquals('1000.00', Str::float('1000,00'));
         $this->assertEquals('1000', Str::float('1000'));
         $this->assertEquals('1000000.00', Str::float('1000000.00'));
+        $this->assertEquals('0.00000001', Str::float(0.00000001));
     }
 
     public function testFrom()
@@ -241,17 +259,17 @@ class StrTest extends TestCase
         // choose a high length for a high probability of occurrence of a character of any type
         $length = 200;
 
-        $this->assertRegexp("/^[[:alnum:]]+$/", Str::random());
-        $this->assertInternalType('string', Str::random());
+        $this->assertRegexp('/^[[:alnum:]]+$/', Str::random());
+        $this->assertIsString(Str::random());
         $this->assertEquals($length, strlen(Str::random($length)));
 
-        $this->assertRegexp("/^[[:alpha:]]+$/", Str::random($length, 'alpha'));
+        $this->assertRegexp('/^[[:alpha:]]+$/', Str::random($length, 'alpha'));
 
-        $this->assertRegexp("/^[[:upper:]]+$/", Str::random($length, 'alphaUpper'));
+        $this->assertRegexp('/^[[:upper:]]+$/', Str::random($length, 'alphaUpper'));
 
-        $this->assertRegexp("/^[[:lower:]]+$/", Str::random($length, 'alphaLower'));
+        $this->assertRegexp('/^[[:lower:]]+$/', Str::random($length, 'alphaLower'));
 
-        $this->assertRegexp("/^[[:digit:]]+$/", Str::random($length, 'num'));
+        $this->assertRegexp('/^[[:digit:]]+$/', Str::random($length, 'num'));
 
         $this->assertFalse(Str::random($length, 'something invalid'));
     }
@@ -526,6 +544,14 @@ class StrTest extends TestCase
 
         $string = 'ää/ö/üü/ß';
         $this->assertEquals(['ää', 'üü'], Str::split($string, '/', 2));
+
+        $string = <<<EOT
+            ---
+            -abc-
+            ---
+            -def-
+EOT;
+        $this->assertEquals(['-abc-', '-def-'], Str::split($string, '---'));
     }
 
     public function testStartsWith()
@@ -603,6 +629,26 @@ class StrTest extends TestCase
         ]);
 
         $this->assertEquals('homer says: hi', $template);
+    }
+
+    public function testToBytes()
+    {
+        $this->assertEquals(0, Str::toBytes(0));
+        $this->assertEquals(0, Str::toBytes(''));
+        $this->assertEquals(0, Str::toBytes(null));
+        $this->assertEquals(0, Str::toBytes(false));
+        $this->assertEquals(0, Str::toBytes('x'));
+        $this->assertEquals(0, Str::toBytes('K'));
+        $this->assertEquals(0, Str::toBytes('M'));
+        $this->assertEquals(0, Str::toBytes('G'));
+        $this->assertEquals(2, Str::toBytes(2));
+        $this->assertEquals(2, Str::toBytes('2'));
+        $this->assertEquals(2 * 1024, Str::toBytes('2K'));
+        $this->assertEquals(2 * 1024, Str::toBytes('2k'));
+        $this->assertEquals(2 * 1024 * 1024, Str::toBytes('2M'));
+        $this->assertEquals(2 * 1024 * 1024, Str::toBytes('2m'));
+        $this->assertEquals(2 * 1024 * 1024 * 1024, Str::toBytes('2G'));
+        $this->assertEquals(2 * 1024 * 1024 * 1024, Str::toBytes('2g'));
     }
 
     public function testToType()

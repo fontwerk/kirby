@@ -2,12 +2,15 @@
 
 namespace Kirby\Cms;
 
-use Kirby\Toolkit\F;
 use Kirby\Toolkit\Dir;
+use Kirby\Toolkit\F;
 use PHPUnit\Framework\TestCase;
 
 class MediaTest extends TestCase
 {
+    protected $app;
+    protected $fixtures;
+
     public function setUp(): void
     {
         $this->app = new App([

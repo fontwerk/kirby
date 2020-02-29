@@ -2,9 +2,8 @@
 
 namespace Kirby\Cms;
 
-use Kirby\Form\Field as FormField;
-use Kirby\Image\Image;
 use Kirby\Cache\FileCache;
+use Kirby\Form\Field as FormField;
 use Kirby\Toolkit\Collection;
 use Kirby\Toolkit\Dir;
 use Kirby\Toolkit\I18n;
@@ -27,6 +26,11 @@ class DummyUser extends User
 
 class AppPluginsTest extends TestCase
 {
+    public $fixtures;
+
+    // used for testPluginLoader()
+    public static $calledPluginsLoadedHook = false;
+
     public function setUp(): void
     {
         App::destroy();
@@ -139,7 +143,7 @@ class AppPluginsTest extends TestCase
                     return [
                         [
                             'pattern' => 'b',
-                            'action'  => function () use ($kirby) {
+                            'action'  => function () {
                                 return 'b';
                             }
                         ]
@@ -304,25 +308,6 @@ class AppPluginsTest extends TestCase
         $this->assertEquals(['foo' => 'bar'], $kirby->controller('test'));
     }
 
-    public function testfileModel()
-    {
-        $kirby = new App([
-            'roots' => [
-                'index' => '/dev/null'
-            ],
-            'fileModels' => [
-                'dummy' => DummyFile::class
-            ]
-        ]);
-
-        $user = File::factory([
-            'filename' => 'test',
-            'model'    => 'dummy'
-        ]);
-
-        $this->assertInstanceOf(DummyFile::class, $user);
-    }
-
     public function testFieldMethod()
     {
         $kirby = new App([
@@ -354,9 +339,11 @@ class AppPluginsTest extends TestCase
             ]
         ]);
 
+        $page  = new Page(['slug' => 'test']);
         $field = new FormField('dummy', [
             'name'  => 'dummy',
-            'peter' => 'shaw'
+            'peter' => 'shaw',
+            'model' => $page
         ]);
 
         $this->assertInstanceOf(FormField::class, $field);
@@ -373,7 +360,7 @@ class AppPluginsTest extends TestCase
                 'index' => '/dev/null'
             ],
             'hooks' => [
-                'testHook' => function ($message) use ($phpUnit, &$executed) {
+                'testHook' => function ($message) use ($phpUnit) {
                     $phpUnit->assertEquals('test', $message);
                 }
             ]
@@ -840,5 +827,57 @@ class AppPluginsTest extends TestCase
 
         // reset methods
         Users::$methods = [];
+    }
+
+    public function testPluginLoader()
+    {
+        $phpUnit  = $this;
+        $executed = 0;
+
+        $kirby = new App([
+            'roots' => [
+                'index'   => $this->fixtures = __DIR__ . '/fixtures/AppPluginsTest',
+                'plugins' => $this->fixtures . '/site/plugins-loader'
+            ],
+            'hooks' => [
+                'system.loadPlugins:after' => function () use ($phpUnit, &$executed) {
+                    if (count($this->plugins()) === 2) {
+                        $phpUnit->assertEquals([
+                            'kirby/manual1' => new Plugin('kirby/manual1', []),
+                            'kirby/manual2' => new Plugin('kirby/manual2', [])
+                        ], $this->plugins());
+                    } else {
+                        $phpUnit->assertEquals([
+                            'kirby/test1' => new Plugin('kirby/test1', [
+                                'hooks' => [
+                                    'system.loadPlugins:after' => function () {
+                                        // just a dummy closure to compare against
+                                    }
+                                ],
+                                'root' => $phpUnit->fixtures . '/site/plugins-loader/test1'
+                            ])
+                        ], $this->plugins());
+                    }
+
+                    $executed++;
+                }
+            ]
+        ]);
+
+        // the hook defined inside the test1 plugin should also have been called
+        $this->assertTrue(static::$calledPluginsLoadedHook);
+
+        // try loading again (which should *not* trigger the hooks again)
+        $kirby->plugins();
+
+        // overwrite plugins with a custom array
+        $expected = [
+            'kirby/manual1' => new Plugin('kirby/manual1', []),
+            'kirby/manual2' => new Plugin('kirby/manual2', [])
+        ];
+        $this->assertEquals($expected, $kirby->plugins($expected));
+
+        // hook should have been called only once after the firs initialization
+        $this->assertEquals(1, $executed);
     }
 }

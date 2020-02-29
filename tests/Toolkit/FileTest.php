@@ -2,33 +2,7 @@
 
 namespace Kirby\Toolkit;
 
-function blockMethod($method, $args)
-{
-    if (in_array($method, FileTest::$block)) {
-        return false;
-    }
-    return call_user_func_array('\\' . $method, $args);
-}
-
-function file_put_contents($file, $content)
-{
-    return blockMethod('file_put_contents', [$file, $content]);
-}
-
-function rename($old, $new)
-{
-    return blockMethod('rename', [$old, $new]);
-}
-
-function copy($old, $new)
-{
-    return blockMethod('copy', [$old, $new]);
-}
-
-function unlink($file)
-{
-    return blockMethod('unlink', [$file]);
-}
+require_once __DIR__ . '/mocks.php';
 
 class FileTest extends TestCase
 {
@@ -44,6 +18,27 @@ class FileTest extends TestCase
     protected function _file($filename = 'test.js')
     {
         return new File(static::FIXTURES . '/' . $filename);
+    }
+
+    public function testBase64()
+    {
+        $file  = $this->_file('real.svg');
+        $base64 = file_get_contents(static::FIXTURES . '/real.svg.base64');
+        $this->assertSame($base64, $file->base64());
+    }
+
+    public function testDataUri()
+    {
+        $file = $this->_file('real.svg');
+        $base64 = file_get_contents(static::FIXTURES . '/real.svg.base64');
+        $this->assertSame('data:image/svg+xml;base64,' . $base64, $file->dataUri());
+    }
+
+    public function testDataUriRaw()
+    {
+        $file = $this->_file('real.svg');
+        $encoded = rawurlencode($file->read());
+        $this->assertSame('data:image/svg+xml,' . $encoded, $file->dataUri(false));
     }
 
     public function testRoot()

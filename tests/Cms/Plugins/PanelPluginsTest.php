@@ -8,6 +8,13 @@ use PHPUnit\Framework\TestCase;
 
 class PanelPluginsTest extends TestCase
 {
+    protected $app;
+    protected $fixtures;
+    protected $cssA;
+    protected $cssB;
+    protected $jsA;
+    protected $jsB;
+
     public function setUp(): void
     {
         $this->app = new App([
@@ -56,7 +63,7 @@ class PanelPluginsTest extends TestCase
     {
         $this->createPlugins();
 
-        $time = time();
+        $time = \time();
 
         $plugins = new PanelPlugins();
         $this->assertEquals($time, $plugins->modified());
@@ -72,11 +79,11 @@ class PanelPluginsTest extends TestCase
         $plugins = new PanelPlugins();
 
         // css
-        $expected = "a\nb";
+        $expected = "a\n\nb";
         $this->assertEquals($expected, $plugins->read('css'));
 
         // js
-        $expected = "a\nb";
+        $expected = "a;\n\nb;";
         $this->assertEquals($expected, $plugins->read('js'));
     }
 

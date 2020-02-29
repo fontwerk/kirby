@@ -31,13 +31,13 @@ class LocationTest extends TestCase
             'lng' => -0.016666666666666666
         ];
         $this->assertEquals($array, $camera->toArray());
-        $this->assertEquals($array, $camera->__debuginfo());
+        $this->assertEquals($array, $camera->__debugInfo());
     }
 
     public function testToString()
     {
         $camera = new Location($this->_exif());
-        $this->assertContains('50.8190533333', (string)$camera);
-        $this->assertContains('-0.016666666666', (string)$camera);
+        $this->assertStringContainsString('50.8190533333', (string)$camera);
+        $this->assertStringContainsString('-0.016666666666', (string)$camera);
     }
 }

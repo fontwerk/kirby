@@ -2,11 +2,12 @@
 
 namespace Kirby\Cms;
 
-use Kirby\Toolkit\I18n;
 use PHPUnit\Framework\TestCase;
 
 class SectionTest extends TestCase
 {
+    protected $app;
+
     public function setUp(): void
     {
         App::destroy();
@@ -61,9 +62,9 @@ class SectionTest extends TestCase
                     'a' => function ($a) {
                         return $a;
                     },
-                    'a' => function ($b) {
+                    'b' => function ($b) {
                         return $b;
-                    },
+                    }
                 ]
             ]
         ];

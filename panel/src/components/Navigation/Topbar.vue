@@ -24,7 +24,7 @@
                   :icon="view.icon"
                   :link="view.link"
                 >
-                  {{ $t("view." + viewName, view.label) }}
+                  {{ menuTitle(view, viewName) }}
                 </k-dropdown-item>
               </li>
               <li><hr></li>
@@ -44,7 +44,6 @@
         </k-dropdown>
 
         <k-link
-          v-tab
           v-if="view"
           :to="view.link"
           class="k-topbar-button k-topbar-view-button"
@@ -75,7 +74,6 @@
 
         <nav class="k-topbar-crumbs">
           <k-link
-            v-tab
             v-for="(crumb, index) in $store.state.breadcrumb"
             :key="'crumb-' + index"
             :to="crumb.link"
@@ -109,6 +107,7 @@
               <p>{{ $t('license.unregistered') }}</p>
               <k-button
                 :responsive="true"
+                :tooltip="$t('license.unregistered')"
                 class="k-topbar-signals-button"
                 icon="key"
                 @click="$emit('register')"
@@ -125,6 +124,11 @@
                 {{ $t('license.buy') }}
               </k-button>
             </div>
+          </template>
+
+          <!-- unsaved changes indicator -->
+          <template>
+            <k-form-indicator />
           </template>
 
           <!-- search -->
@@ -175,6 +179,17 @@ export default {
     },
     unregistered() {
       return !this.$store.state.system.info.license ? true : false;
+    }
+  },
+  methods: {
+    menuTitle(view, viewName) {
+      let title = this.$t("view." + viewName, view.label);
+
+      if (viewName === "site") {
+        return this.$store.state.system.info.site || title;
+      }
+
+      return title;
     }
   }
 };
@@ -246,7 +261,6 @@ export default {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  @include highlight-tabbed;
 
   [dir="ltr"] & {
     padding-right: 0;

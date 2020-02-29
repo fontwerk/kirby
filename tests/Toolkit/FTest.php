@@ -4,6 +4,10 @@ namespace Kirby\Toolkit;
 
 class FTest extends TestCase
 {
+    protected $fixtures;
+    protected $moved;
+    protected $tmp;
+
     public function setUp(): void
     {
         $this->fixtures = __DIR__ . '/fixtures/f';
@@ -151,6 +155,36 @@ class FTest extends TestCase
         $this->expectExceptionMessage('The file is not within the parent directory');
 
         F::realpath($file, $parent);
+    }
+
+    public function testRelativePath()
+    {
+        $path = F::relativepath(__FILE__, __DIR__);
+        $this->assertEquals('/' . basename(__FILE__), $path);
+    }
+
+    public function testRelativePathWithEmptyBase()
+    {
+        $path = F::relativepath(__FILE__, '');
+        $this->assertEquals(basename(__FILE__), $path);
+
+        $path = F::relativepath(__FILE__, null);
+        $this->assertEquals(basename(__FILE__), $path);
+    }
+
+    public function testRelativePathWithUnrelatedBase()
+    {
+        $path = F::relativepath(__FILE__, '/something/something');
+        $this->assertEquals(basename(__FILE__), $path);
+    }
+
+    public function testRelativePathOnWindows()
+    {
+        $file = 'C:\xampp\htdocs\index.php';
+        $in   = 'C:/xampp/htdocs';
+
+        $path = F::relativepath($file, $in);
+        $this->assertEquals('/index.php', $path);
     }
 
     public function testSymlink()
@@ -374,7 +408,7 @@ class FTest extends TestCase
 
     public function testWriteObject()
     {
-        $input = new \stdClass;
+        $input = new \stdClass();
 
         F::write($this->tmp, $input);
 

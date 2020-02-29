@@ -73,7 +73,7 @@ export default {
       user: {
         name: "",
         email: "",
-        language: "en",
+        language: "",
         password: "",
         role: "admin"
       },
@@ -101,12 +101,6 @@ export default {
     },
     fields() {
       return {
-        name: {
-          label: this.$t("name"),
-          type: "text",
-          icon: "user",
-          autofocus: true
-        },
         email: {
           label: this.$t("email"),
           type: "email",
@@ -131,14 +125,18 @@ export default {
     }
   },
   watch: {
-    translation(value) {
-      this.user.language = value;
+    translation: {
+      handler(value) {
+        this.user.language = value;
+      },
+      immediate: true
     },
     "user.language"(language) {
       this.$store.dispatch("translation/activate", language);
     }
   },
   created() {
+    this.$store.dispatch("content/current", null);
     this.check();
   },
   methods: {

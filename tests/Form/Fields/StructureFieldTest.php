@@ -3,28 +3,31 @@
 namespace Kirby\Form\Fields;
 
 use Kirby\Cms\App;
-use Kirby\Data\Yaml;
 use Kirby\Form\Field;
 
 class StructureFieldTest extends TestCase
 {
     public function testDefaultProps()
     {
-        $field = new Field('structure', [
-            'fields' => []
+        $field = $this->field('structure', [
+            'fields' => [
+                'text' => [
+                    'type' => 'text'
+                ]
+            ]
         ]);
 
         $this->assertEquals('structure', $field->type());
         $this->assertEquals('structure', $field->name());
         $this->assertEquals(null, $field->limit());
-        $this->assertEquals([], $field->fields());
+        $this->assertTrue(is_array($field->fields()));
         $this->assertEquals([], $field->value());
         $this->assertTrue($field->save());
     }
 
     public function testTagsFieldInStructure()
     {
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'fields' => [
                 'tags' => [
                     'label' => 'Tags',
@@ -62,7 +65,7 @@ class StructureFieldTest extends TestCase
 
     public function testLowerCaseColumnsNames()
     {
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'columns' => [
                 'camelCase' => true
             ],
@@ -78,7 +81,7 @@ class StructureFieldTest extends TestCase
 
     public function testMin()
     {
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'fields' => [
                 'title' => [
                     'type' => 'text'
@@ -98,7 +101,7 @@ class StructureFieldTest extends TestCase
 
     public function testMax()
     {
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'fields' => [
                 'title' => [
                     'type' => 'text'
@@ -118,7 +121,7 @@ class StructureFieldTest extends TestCase
 
     public function testNestedStructures()
     {
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'model'  => 'test',
             'name'   => 'mothers',
             'fields' => [
@@ -198,7 +201,7 @@ class StructureFieldTest extends TestCase
 
     public function testFloatsWithNonUsLocale()
     {
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'fields' => [
                 'number' => [
                     'type' => 'number'
@@ -216,8 +219,12 @@ class StructureFieldTest extends TestCase
 
     public function testEmpty()
     {
-        $field = new Field('structure', [
-            'fields' => [],
+        $field = $this->field('structure', [
+            'fields' => [
+                'text' => [
+                    'type' => 'text'
+                ]
+            ],
             'empty' => 'Test'
         ]);
 
@@ -226,8 +233,12 @@ class StructureFieldTest extends TestCase
 
     public function testTranslatedEmpty()
     {
-        $field = new Field('structure', [
-            'fields' => [],
+        $field = $this->field('structure', [
+            'fields' => [
+                'text' => [
+                    'type' => 'text'
+                ]
+            ],
             'empty' => ['en' => 'Test', 'de' => 'Töst']
         ]);
 
@@ -254,7 +265,7 @@ class StructureFieldTest extends TestCase
             ]
         ]);
 
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'fields' => [
                 'a' => [
                     'type' => 'text'
@@ -279,7 +290,7 @@ class StructureFieldTest extends TestCase
 
     public function testDefault()
     {
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'fields' => [
                 'a' => [
                     'type' => 'text'
@@ -301,7 +312,7 @@ class StructureFieldTest extends TestCase
 
     public function testRequiredProps()
     {
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'fields' => [
                 'title' => [
                     'type' => 'text'
@@ -316,7 +327,7 @@ class StructureFieldTest extends TestCase
 
     public function testRequiredInvalid()
     {
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'fields' => [
                 'title' => [
                     'type' => 'text'
@@ -330,7 +341,7 @@ class StructureFieldTest extends TestCase
 
     public function testRequiredValid()
     {
-        $field = new Field('structure', [
+        $field = $this->field('structure', [
             'fields' => [
                 'title' => [
                     'type' => 'text'

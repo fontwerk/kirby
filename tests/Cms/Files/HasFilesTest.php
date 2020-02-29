@@ -2,8 +2,6 @@
 
 namespace Kirby\Cms;
 
-use PHPUnit\Framework\TestCase as BaseTestCase;
-
 class HasFileTraitUser
 {
     use HasFiles;
@@ -24,6 +22,8 @@ class HasFileTraitUser
 
 class HasFilesTest extends TestCase
 {
+    protected $app;
+
     public function setUp(): void
     {
         $this->app = new App([

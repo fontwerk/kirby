@@ -4,6 +4,8 @@ namespace Kirby\Cms;
 
 class BlueprintPresetsTest extends TestCase
 {
+    protected $app;
+
     public function setUp(): void
     {
         $this->app = new App([
@@ -254,6 +256,7 @@ class BlueprintPresetsTest extends TestCase
                     'layout'   => 'cards',
                     'info'     => '{{ file.dimensions }}',
                     'template' => null,
+                    'image'    => null
                 ]
             ]
         ];
@@ -278,6 +281,7 @@ class BlueprintPresetsTest extends TestCase
                     'layout'   => 'cards',
                     'info'     => '{{ file.dimensions }}',
                     'template' => null,
+                    'image'    => null
                 ]
             ]
         ];
@@ -302,6 +306,7 @@ class BlueprintPresetsTest extends TestCase
                     'layout'   => 'list',
                     'info'     => '{{ file.dimensions }}',
                     'template' => null,
+                    'image'    => null
                 ]
             ]
         ];
@@ -326,6 +331,32 @@ class BlueprintPresetsTest extends TestCase
                     'layout'   => 'cards',
                     'info'     => '{{ file.dimensions }}',
                     'template' => 'image',
+                    'image'    => null
+                ]
+            ]
+        ];
+
+        $this->assertEquals($expected, $props);
+    }
+
+    public function testFilesPresetWithImage()
+    {
+        $preset = $this->load('files');
+
+        // default setup
+        $props = $preset([
+            'image' => 'icon'
+        ]);
+
+        $expected = [
+            'sections' => [
+                'files' => [
+                    'headline' => 'Files',
+                    'type'     => 'files',
+                    'layout'   => 'cards',
+                    'info'     => '{{ file.dimensions }}',
+                    'template' => null,
+                    'image'    => 'icon'
                 ]
             ]
         ];

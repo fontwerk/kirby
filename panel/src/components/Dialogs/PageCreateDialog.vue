@@ -20,7 +20,6 @@
 
 <script>
 import DialogMixin from "@/mixins/dialog.js";
-import slug from "@/helpers/slug.js";
 
 export default {
   mixins: [DialogMixin],
@@ -70,7 +69,7 @@ export default {
   },
   watch: {
     "page.title"(title) {
-      this.page.slug = slug(title, [this.slugs, this.system.ascii]);
+      this.page.slug = this.$helper.slug(title, [this.slugs, this.system.ascii]);
     }
   },
   methods: {
@@ -107,10 +106,12 @@ export default {
 
     },
     submit() {
+      // prevent empty title with just spaces
+      this.page.title = this.page.title.trim();
 
       if (this.page.title.length === 0) {
-        this.$refs.dialog.error('Please enter a title');
-        return false;
+        this.$refs.dialog.error(this.$t("error.page.changeTitle.empty"));
+        return;
       }
 
       const data = {

@@ -8,10 +8,17 @@ class PageTestModel extends Page
 {
 }
 
+class PageTestForceLocked extends Page
+{
+    public function isLocked(): bool
+    {
+        return true;
+    }
+}
+
 
 class PageTest extends TestCase
 {
-
     /**
      * Deregister any plugins for the page
      *
@@ -64,7 +71,7 @@ class PageTest extends TestCase
             ]
         ]);
 
-        $this->assertEquals(['A', 'B', 'C'], array_column($page->blueprints(), 'title'));
+        $this->assertEquals(['C', 'A', 'B'], array_column($page->blueprints(), 'title'));
 
         // including the same blueprint
         $page = new Page([
@@ -129,7 +136,30 @@ class PageTest extends TestCase
         ]);
 
         $this->assertEquals('(link: test text: test)', $page->dragText());
-        $this->assertEquals('[test](/test)', $page->dragText('markdown'));
+    }
+
+    public function testDragTextMarkdown()
+    {
+        $app = new App([
+            'roots' => [
+                'index' => '/dev/null'
+            ],
+            'options' => [
+                'panel' => [
+                    'kirbytext' => false
+                ]
+            ],
+            'site' => [
+                'children' => [
+                    [
+                        'slug' => 'test'
+                    ]
+                ]
+            ]
+        ]);
+
+        $page = $app->page('test');
+        $this->assertEquals('[test](/test)', $page->dragText());
     }
 
     public function testDragTextWithTitle()
@@ -142,7 +172,33 @@ class PageTest extends TestCase
         ]);
 
         $this->assertEquals('(link: test text: Test Title)', $page->dragText());
-        $this->assertEquals('[Test Title](/test)', $page->dragText('markdown'));
+    }
+
+    public function testDragTextWithTitleMarkdown()
+    {
+        $app = new App([
+            'roots' => [
+                'index' => '/dev/null'
+            ],
+            'options' => [
+                'panel' => [
+                    'kirbytext' => false
+                ]
+            ],
+            'site' => [
+                'children' => [
+                    [
+                        'slug' => 'test',
+                        'content' => [
+                            'title' => 'Test Title'
+                        ]
+                    ]
+                ]
+            ]
+        ]);
+
+        $page = $app->page('test');
+        $this->assertEquals('[Test Title](/test)', $page->dragText());
     }
 
     public function testId()
@@ -796,6 +852,74 @@ class PageTest extends TestCase
         $this->assertEquals($emoji, $icon['type']);
         $this->assertEquals('pattern', $icon['back']);
         $this->assertEquals(null, $icon['ratio']);
+    }
+
+    public function testPanelOptions()
+    {
+        $page = new Page([
+            'slug' => 'test',
+        ]);
+
+        $page->kirby()->impersonate('kirby');
+
+        $expected = [
+            'changeSlug'     => true,
+            'changeStatus'   => true,
+            'changeTemplate' => false, // no other template available in this scenario
+            'changeTitle'    => true,
+            'create'         => true,
+            'delete'         => true,
+            'duplicate'      => true,
+            'read'           => true,
+            'preview'        => true,
+            'sort'           => false, // drafts cannot be sorted
+            'update'         => true,
+        ];
+
+        $this->assertEquals($expected, $page->panelOptions());
+    }
+
+    public function testPanelOptionsWithLockedPage()
+    {
+        $page = new PageTestForceLocked([
+            'slug' => 'test',
+        ]);
+
+        $page->kirby()->impersonate('kirby');
+
+        // without override
+        $expected = [
+            'changeSlug'     => false,
+            'changeStatus'   => false,
+            'changeTemplate' => false,
+            'changeTitle'    => false,
+            'create'         => false,
+            'delete'         => false,
+            'duplicate'      => false,
+            'read'           => false,
+            'preview'        => false,
+            'sort'           => false,
+            'update'         => false,
+        ];
+
+        $this->assertEquals($expected, $page->panelOptions());
+
+        // with override
+        $expected = [
+            'changeSlug'     => false,
+            'changeStatus'   => false,
+            'changeTemplate' => false,
+            'changeTitle'    => false,
+            'create'         => false,
+            'delete'         => false,
+            'duplicate'      => false,
+            'read'           => false,
+            'preview'        => true,
+            'sort'           => false,
+            'update'         => false,
+        ];
+
+        $this->assertEquals($expected, $page->panelOptions(['preview']));
     }
 
     public function testPanelUrl()

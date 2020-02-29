@@ -2,8 +2,6 @@
 
 namespace Kirby\Cms;
 
-use Exception;
-
 class ContentTest extends TestCase
 {
     protected function mockData(): array
@@ -137,7 +135,7 @@ class ContentTest extends TestCase
 
     public function testToArray()
     {
-        return $this->assertEquals($this->mockData(), $this->mockObject()->toArray());
+        $this->assertEquals($this->mockData(), $this->mockObject()->toArray());
     }
 
     public function testUpdate()
@@ -152,6 +150,6 @@ class ContentTest extends TestCase
 
     public function testDebuginfo()
     {
-        return $this->assertEquals($this->mockData(), $this->mockObject()->__debuginfo());
+        $this->assertEquals($this->mockData(), $this->mockObject()->__debugInfo());
     }
 }

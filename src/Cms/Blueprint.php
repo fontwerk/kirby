@@ -3,9 +3,9 @@
 namespace Kirby\Cms;
 
 use Exception;
+use Kirby\Data\Data;
 use Kirby\Exception\InvalidArgumentException;
 use Kirby\Exception\NotFoundException;
-use Kirby\Data\Data;
 use Kirby\Form\Field;
 use Kirby\Toolkit\A;
 use Kirby\Toolkit\F;
@@ -90,7 +90,7 @@ class Blueprint
      *
      * @return array
      */
-    public function __debuginfo(): array
+    public function __debugInfo(): array
     {
         return $this->props ?? [];
     }
@@ -198,22 +198,16 @@ class Blueprint
             return $props;
         }
 
-        $mixin = static::find($extends);
-
-        if ($mixin === null) {
-            $props = $props;
-        } elseif (is_array($mixin) === true) {
+        try {
+            $mixin = static::find($extends);
             $props = A::merge($mixin, $props, A::MERGE_REPLACE);
-        } else {
-            try {
-                $props = A::merge(Data::read($mixin), $props, A::MERGE_REPLACE);
-            } catch (Exception $e) {
-                $props = $props;
-            }
+        } catch (Exception $e) {
+            // keep the props unextended if the snippet wasn't found
         }
 
         // remove the extends flag
         unset($props['extends']);
+
         return $props;
     }
 
@@ -222,7 +216,7 @@ class Blueprint
      *
      * @param string $name
      * @param string $fallback
-     * @param Kirby\Cms\Model $model
+     * @param \Kirby\Cms\Model $model
      * @return self
      */
     public static function factory(string $name, string $fallback = null, Model $model)
@@ -268,22 +262,32 @@ class Blueprint
      * Find a blueprint by name
      *
      * @param string $name
-     * @return string|array
+     * @return array
      */
-    public static function find(string $name)
+    public static function find(string $name): array
     {
+        if (isset(static::$loaded[$name]) === true) {
+            return static::$loaded[$name];
+        }
+
         $kirby = App::instance();
         $root  = $kirby->root('blueprints');
         $file  = $root . '/' . $name . '.yml';
 
-        if (F::exists($file, $root) === true) {
-            return $file;
+        // first try to find a site blueprint,
+        // then check in the plugin extensions
+        if (F::exists($file, $root) !== true) {
+            $file = $kirby->extension('blueprints', $name);
         }
 
-        if ($blueprint = $kirby->extension('blueprints', $name)) {
-            return $blueprint;
+        // now ensure that we always return the data array
+        if (is_string($file) === true && F::exists($file) === true) {
+            return static::$loaded[$name] = Data::read($file);
+        } elseif (is_array($file) === true) {
+            return static::$loaded[$name] = $file;
         }
 
+        // neither a valid file nor array data
         throw new NotFoundException([
             'key'  => 'blueprint.notFound',
             'data' => ['name' => $name]
@@ -320,13 +324,9 @@ class Blueprint
      */
     public static function load(string $name): array
     {
-        if (isset(static::$loaded[$name]) === true) {
-            return static::$loaded[$name];
-        }
+        $props = static::find($name);
 
-        $props     = static::find($name);
         $normalize = function ($props) use ($name) {
-
             // inject the filename as name if no name is set
             $props['name'] = $props['name'] ?? $name;
 
@@ -339,20 +339,13 @@ class Blueprint
             return $props;
         };
 
-        if (is_array($props) === true) {
-            return $normalize($props);
-        }
-
-        $file  = $props;
-        $props = Data::read($file);
-
-        return static::$loaded[$name] = $normalize($props);
+        return $normalize($props);
     }
 
     /**
      * Returns the parent model
      *
-     * @return Kirby\Cms\Model
+     * @return \Kirby\Cms\Model
      */
     public function model()
     {
@@ -472,7 +465,7 @@ class Blueprint
         return [
             'label' => 'Error',
             'name'  => $name,
-            'text'  => $message,
+            'text'  => strip_tags($message),
             'theme' => 'negative',
             'type'  => 'info',
         ];
@@ -595,15 +588,27 @@ class Blueprint
                 continue;
             }
 
+            // fallback to default props when true is passed
+            if ($sectionProps === true) {
+                $sectionProps = [];
+            }
+
             // inject all section extensions
             $sectionProps = $this->extend($sectionProps);
 
             $sections[$sectionName] = $sectionProps = array_merge($sectionProps, [
                 'name' => $sectionName,
-                'type' => $type = $sectionProps['type'] ?? null
+                'type' => $type = $sectionProps['type'] ?? $sectionName
             ]);
 
-            if (isset(Section::$types[$type]) === false) {
+            if (empty($type) === true || is_string($type) === false) {
+                $sections[$sectionName] = [
+                    'name' => $sectionName,
+                    'headline' => 'Invalid section type for section "' . $sectionName . '"',
+                    'type' => 'info',
+                    'text' => 'The following section types are available: ' . $this->helpList(array_keys(Section::$types))
+                ];
+            } elseif (isset(Section::$types[$type]) === false) {
                 $sections[$sectionName] = [
                     'name' => $sectionName,
                     'headline' => 'Invalid section type ("' . $type . '")',
@@ -712,7 +717,7 @@ class Blueprint
      * Returns a single section by name
      *
      * @param string $name
-     * @return Kirby\Cms\Section|null
+     * @return \Kirby\Cms\Section|null
      */
     public function section(string $name)
     {

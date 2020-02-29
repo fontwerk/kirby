@@ -2,13 +2,14 @@
 
 namespace Kirby\Cms;
 
-use Exception;
-use ReflectionClass;
 use Kirby\Toolkit\Dir;
+use ReflectionClass;
 
 class SystemTest extends TestCase
 {
     protected $_SERVER = null;
+    protected $app;
+    protected $fixtures;
 
     public function setUp(): void
     {

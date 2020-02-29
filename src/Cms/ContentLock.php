@@ -17,7 +17,6 @@ use Kirby\Exception\PermissionException;
  */
 class ContentLock
 {
-
     /**
      * Lock data
      *
@@ -33,12 +32,30 @@ class ContentLock
     protected $model;
 
     /**
-     * @param Kirby\Cms\ModelWithContent $model
+     * @param \Kirby\Cms\ModelWithContent $model
      */
     public function __construct(ModelWithContent $model)
     {
         $this->model = $model;
         $this->data  = $this->kirby()->locks()->get($model);
+    }
+
+    /**
+     * Clears the lock unconditionally
+     *
+     * @return bool
+     */
+    protected function clearLock(): bool
+    {
+        // if no lock exists, skip
+        if (isset($this->data['lock']) === false) {
+            return true;
+        }
+
+        // remove lock
+        unset($this->data['lock']);
+
+        return $this->kirby()->locks()->set($this->model, $this->data);
     }
 
     /**
@@ -66,34 +83,32 @@ class ContentLock
     }
 
     /**
-     * Returns array  with `locked` flag and,
-     * if needed, `user`, `email`, `time`, `canUnlock`
+     * Returns either `false` or array  with `user`, `email`,
+     * `time` and `unlockable` keys
      *
-     * @return array
+     * @return array|bool
      */
-    public function get(): array
+    public function get()
     {
         $data = $this->data['lock'] ?? [];
 
-        if (
-            empty($data) === false &&
-            $data['user'] !== $this->user()->id() &&
-            $user = $this->kirby()->user($data['user'])
-        ) {
-            $time = intval($data['time']);
+        if (empty($data) === false && $data['user'] !== $this->user()->id()) {
+            if ($user = $this->kirby()->user($data['user'])) {
+                $time = (int)($data['time']);
 
-            return [
-                'locked'    => true,
-                'user'      => $user->id(),
-                'email'     => $user->email(),
-                'time'      => $time,
-                'canUnlock' => $time + $this->kirby()->option('lock.duration', 60 * 2) <= time()
-            ];
+                return [
+                    'user'       => $user->id(),
+                    'email'      => $user->email(),
+                    'time'       => $time,
+                    'unlockable' => ($time + 60) <= time()
+                ];
+            }
+
+            // clear lock if user not found
+            $this->clearLock();
         }
 
-        return [
-            'locked' => false
-        ];
+        return false;
     }
 
     /**
@@ -105,10 +120,7 @@ class ContentLock
     {
         $lock = $this->get();
 
-        if (
-            $lock['locked'] === true &&
-            $lock['user'] !== $this->user()->id()
-        ) {
+        if ($lock !== false && $lock['user'] !== $this->user()->id()) {
             return true;
         }
 
@@ -130,7 +142,7 @@ class ContentLock
     /**
      * Returns the app instance
      *
-     * @return Kirby\Cms\App
+     * @return \Kirby\Cms\App
      */
     protected function kirby(): App
     {
@@ -151,13 +163,13 @@ class ContentLock
 
         // check if lock was set by another user
         if ($this->data['lock']['user'] !== $this->user()->id()) {
-            throw new LogicException('The content lock can only be removed by the user who created it. Use unlock instead.', 409);
+            throw new LogicException([
+                'fallback' => 'The content lock can only be removed by the user who created it. Use unlock instead.',
+                'httpCode' => 409
+            ]);
         }
 
-        // remove lock
-        unset($this->data['lock']);
-
-        return $this->kirby()->locks()->set($this->model, $this->data);
+        return $this->clearLock();
     }
 
     /**
@@ -197,17 +209,14 @@ class ContentLock
         $this->data['unlock']   = $this->data['unlock'] ?? [];
         $this->data['unlock'][] = $this->data['lock']['user'];
 
-        // remove lock
-        unset($this->data['lock']);
-
-        return $this->kirby()->locks()->set($this->model, $this->data);
+        return $this->clearLock();
     }
 
     /**
      * Returns currently authenticated user;
      * throws exception if none is authenticated
      *
-     * @return Kirby\Cms\User
+     * @return \Kirby\Cms\User
      */
     protected function user(): User
     {

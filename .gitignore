@@ -12,8 +12,10 @@
 *.sublime-project
 *.sublime-workspace
 /.vscode
+/.idea
 
 # tests
+.phpunit.result.cache
 /panel/cypress
 /tests/coverage
 

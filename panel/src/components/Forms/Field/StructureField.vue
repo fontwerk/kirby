@@ -44,13 +44,22 @@
     </template>
 
     <!-- Empty State -->
-    <k-empty v-else-if="items.length === 0" icon="list-bullet" @click="add">
+    <k-empty
+      v-else-if="items.length === 0"
+      :data-invalid="isInvalid"
+      icon="list-bullet"
+      @click="add"
+    >
       {{ empty || $t("field.structure.empty") }}
     </k-empty>
 
     <!-- Table -->
     <template v-else>
-      <table :data-sortable="isSortable" class="k-structure-table">
+      <table
+        :data-invalid="isInvalid"
+        :data-sortable="isSortable"
+        class="k-structure-table"
+      >
         <thead>
           <tr>
             <th class="k-structure-table-index">#</th>
@@ -99,6 +108,7 @@
                   :value="item[columnName]"
                   :column="column"
                   :field="fields[columnName]"
+                  @input="update(index, columnName, $event)"
                 />
                 <template v-else>
                   <p class="k-structure-table-text">
@@ -131,12 +141,9 @@
 <script>
 import Vue from "vue";
 import Field from "../Field.vue";
-import dayjs from "dayjs";
-import sorter from "@/helpers/sort.js";
-import clone from "@/helpers/clone.js";
 
 Array.prototype.sortBy = function(sortBy) {
-  const sort = sorter();
+  const sort = Vue.prototype.$helper.sort();
   const options = sortBy.split(" ");
   const field = options[0];
   const direction = options[1] || "asc";
@@ -220,6 +227,21 @@ export default {
 
       return true;
     },
+    isInvalid() {
+      if (this.disabled === true) {
+        return false;
+      }
+
+      if (this.min && this.items.length < this.min) {
+        return true;
+      }
+
+      if (this.max && this.items.length > this.max) {
+        return true;
+      }
+
+      return false;
+    },
     isSortable() {
       if (this.sortBy) {
         return false;
@@ -292,8 +314,8 @@ export default {
 
       Object.keys(this.fields).forEach(fieldName => {
         const field = this.fields[fieldName];
-        if (field.default) {
-          data[fieldName] = clone(field.default);
+        if (field.default !== null) {
+          data[fieldName] = this.$helper.clone(field.default);
         } else {
           data[fieldName] = null;
         }
@@ -311,7 +333,7 @@ export default {
       this.$events.$off("keydown.esc", this.escape);
       this.$events.$off("keydown.cmd.s", this.submit);
 
-      this.$store.dispatch("form/enable");
+      this.$store.dispatch("content/enable");
     },
     columnIsEmpty(value) {
       if (value === undefined || value === null || value === "") {
@@ -340,7 +362,7 @@ export default {
     createForm(field) {
       this.$events.$on("keydown.esc", this.escape);
       this.$events.$on("keydown.cmd.s", this.submit);
-      this.$store.dispatch("form/disable");
+      this.$store.dispatch("content/disable");
 
       this.$nextTick(() => {
         if (this.$refs.form) {
@@ -354,11 +376,12 @@ export default {
           return value.email;
         }
         case "date": {
-          const date = dayjs(value);
+          const date = this.$library.dayjs(value);
           const format = field.time === true ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD";
           return date.isValid() ? date.format(format) : "";
         }
         case "tags":
+        case "multiselect":
           return value
             .map(item => {
               return item.text;
@@ -390,7 +413,7 @@ export default {
         return "…";
       }
 
-      return value;
+      return value.toString();
     },
     escape() {
       if (this.currentIndex === "new") {
@@ -412,7 +435,9 @@ export default {
       this.submit();
     },
     focus() {
-      this.$refs.add.focus();
+      if (this.$refs.add && this.$refs.add.focus) {
+        this.$refs.add.focus();
+      }
     },
     indexOf(index) {
       if (!this.limit) {
@@ -439,7 +464,7 @@ export default {
     },
     open(index, field) {
       this.currentIndex = index;
-      this.currentModel = clone(this.items[index]);
+      this.currentModel = this.$helper.clone(this.items[index]);
       this.createForm(field);
     },
     beforePaginate() {
@@ -538,8 +563,7 @@ export default {
       if (!fraction) {
         return "auto";
       }
-
-      const parts = fraction.split("/");
+      const parts = fraction.toString().split("/");
 
       if (parts.length !== 2) {
         return "auto";
@@ -549,6 +573,10 @@ export default {
       const b = Number(parts[1]);
 
       return parseFloat(100 / b * a, 2).toFixed(2) + "%";
+    },
+    update(index, column, value) {
+      this.items[index][column] = value;
+      this.onInput();
     }
   }
 };
@@ -558,6 +586,7 @@ export default {
 $structure-item-height: 38px;
 
 .k-structure-table {
+  position: relative;
   table-layout: fixed;
   width: 100%;
   background: #fff;
@@ -582,7 +611,14 @@ $structure-item-height: 38px;
   }
 
   th {
+    position: sticky;
+    top: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    background: #fff;
     font-weight: 400;
+    z-index: 1;
     color: $color-dark-grey;
     padding: 0 0.75rem;
     height: $structure-item-height;
@@ -646,6 +682,10 @@ $structure-item-height: 38px;
     [dir="rtl"] & {
       text-align: left;
     }
+  }
+  .k-structure-table-column[data-align="right"] > .k-input {
+    flex-direction: column;
+    align-items: flex-end;
   }
 
   /* column widths */
@@ -721,6 +761,8 @@ $structure-item-height: 38px;
     box-shadow: rgba($color-dark, 0.25) 0 5px 10px;
     outline: 2px solid $color-focus;
     margin-bottom: 2px;
+    cursor: grabbing;
+    cursor: -moz-grabbing;
     cursor: -webkit-grabbing;
   }
 }

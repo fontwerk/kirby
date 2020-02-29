@@ -2,11 +2,12 @@
 
 namespace Kirby\Cms;
 
-use Kirby\Toolkit\I18n;
 use PHPUnit\Framework\TestCase;
 
 class PagesSectionTest extends TestCase
 {
+    protected $app;
+
     public function setUp(): void
     {
         App::destroy();
@@ -153,6 +154,72 @@ class PagesSectionTest extends TestCase
         $this->assertFalse($section->add());
     }
 
+    public function testSortBy()
+    {
+        $locale = setlocale(LC_ALL, 0);
+        setlocale(LC_ALL, ['de_DE.ISO8859-1', 'de_DE']);
+
+        $page = new Page([
+            'slug'     => 'test',
+            'children' => [
+                ['slug' => 'subpage-1', 'content' => ['title' => 'Z']],
+                ['slug' => 'subpage-2', 'content' => ['title' => 'Ä']],
+                ['slug' => 'subpage-3', 'content' => ['title' => 'B']]
+            ]
+        ]);
+
+        // no settings
+        $section = new Section('pages', [
+            'name'  => 'test',
+            'model' => $page
+        ]);
+        $this->assertEquals('Z', $section->data()[0]['text']);
+        $this->assertEquals('Ä', $section->data()[1]['text']);
+        $this->assertEquals('B', $section->data()[2]['text']);
+
+        // sort by field
+        $section = new Section('pages', [
+            'name'   => 'test',
+            'model'  => $page,
+            'sortBy' => 'title'
+        ]);
+        $this->assertEquals('B', $section->data()[0]['text']);
+        $this->assertEquals('Z', $section->data()[1]['text']);
+        $this->assertEquals('Ä', $section->data()[2]['text']);
+
+        // custom sorting direction
+        $section = new Section('pages', [
+            'name'   => 'test',
+            'model'  => $page,
+            'sortBy' => 'title desc'
+        ]);
+        $this->assertEquals('Ä', $section->data()[0]['text']);
+        $this->assertEquals('Z', $section->data()[1]['text']);
+        $this->assertEquals('B', $section->data()[2]['text']);
+
+        // custom flag
+        $section = new Section('pages', [
+            'name'   => 'test',
+            'model'  => $page,
+            'sortBy' => 'title SORT_LOCALE_STRING'
+        ]);
+        $this->assertEquals('Ä', $section->data()[0]['text']);
+        $this->assertEquals('B', $section->data()[1]['text']);
+        $this->assertEquals('Z', $section->data()[2]['text']);
+
+        // flag & sorting direction
+        $section = new Section('pages', [
+            'name'   => 'test',
+            'model'  => $page,
+            'sortBy' => 'title desc SORT_LOCALE_STRING'
+        ]);
+        $this->assertEquals('Z', $section->data()[0]['text']);
+        $this->assertEquals('B', $section->data()[1]['text']);
+        $this->assertEquals('Ä', $section->data()[2]['text']);
+
+        setlocale(LC_ALL, $locale);
+    }
+
     public function testSortable()
     {
         $section = new Section('pages', [
@@ -172,6 +239,28 @@ class PagesSectionTest extends TestCase
         ]);
 
         $this->assertFalse($section->sortable());
+    }
+
+    public function testFlip()
+    {
+        $page = new Page([
+            'slug'     => 'test',
+            'children' => [
+                ['slug' => 'subpage-1', 'content' => ['title' => 'C']],
+                ['slug' => 'subpage-2', 'content' => ['title' => 'A']],
+                ['slug' => 'subpage-3', 'content' => ['title' => 'B']]
+            ]
+        ]);
+
+        $section = new Section('pages', [
+            'name'  => 'test',
+            'model' => $page,
+            'flip'  => true
+        ]);
+
+        $this->assertEquals('B', $section->data()[0]['text']);
+        $this->assertEquals('A', $section->data()[1]['text']);
+        $this->assertEquals('C', $section->data()[2]['text']);
     }
 
     public function sortableStatusProvider()
@@ -233,7 +322,7 @@ class PagesSectionTest extends TestCase
         $data = $section->data();
 
         // existing covers
-        $this->assertContains('data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw', $data[0]['image']['cards']['url']);
+        $this->assertStringContainsString('data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw', $data[0]['image']['cards']['url']);
 
         // non-existing covers
         $this->assertNull($data[2]['image']['cards']['url'] ?? null);
@@ -301,7 +390,7 @@ class PagesSectionTest extends TestCase
             'help'  => 'Test'
         ]);
 
-        $this->assertEquals('Test', $section->help());
+        $this->assertEquals('<p>Test</p>', $section->help());
 
         // translated help
         $section = new Section('pages', [
@@ -313,6 +402,6 @@ class PagesSectionTest extends TestCase
             ]
         ]);
 
-        $this->assertEquals('Information', $section->help());
+        $this->assertEquals('<p>Information</p>', $section->help());
     }
 }

@@ -2,7 +2,6 @@
   <a
     v-if="to && !disabled"
     ref="link"
-    :disabled="disabled"
     :href="href"
     :rel="relAttr"
     :tabindex="tabindex"
@@ -24,14 +23,17 @@
 </template>
 
 <script>
+import tab from "@/mixins/tab.js";
+
 export default {
+  mixins: [tab],
   props: {
     disabled: Boolean,
     rel: String,
-    tabindex: String,
+    tabindex: [String, Number],
     target: String,
     title: String,
-    to: String,
+    to: [String, Function],
   },
   data() {
     return {
@@ -44,9 +46,14 @@ export default {
   },
   computed: {
     href() {
+      if (typeof this.to === "function") {
+        return '';
+      }
+
       if (this.$route !== undefined && this.to[0] === '/' && !this.target) {
         return (this.$router.options.url || '') + this.to;
       }
+
       return this.to;
     }
   },
@@ -85,16 +92,24 @@ export default {
         return false;
       }
 
+      if (typeof this.to === "function") {
+        event.preventDefault();
+        this.to();
+      }
+
       if (this.isRoutable(event)) {
         event.preventDefault();
         this.$router.push(this.to);
       }
 
       this.$emit("click", event);
-    },
-    focus() {
-      this.$refs.link.focus();
     }
   }
 };
 </script>
+
+<style lang="scss">
+.k-link {
+  @include highlight-tabbed;
+}
+</style>

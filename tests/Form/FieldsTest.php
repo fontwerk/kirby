@@ -2,7 +2,6 @@
 
 namespace Kirby\Form;
 
-use Kirby\Cms\App;
 use Kirby\Cms\Page;
 use PHPUnit\Framework\TestCase;
 
@@ -10,14 +9,12 @@ class FieldsTest extends TestCase
 {
     public function setUp(): void
     {
-        Field::$types  = [];
-        Field::$mixins = [];
+        Field::$types = [];
     }
 
     public function tearDown(): void
     {
-        Field::$types  = [];
-        Field::$mixins = [];
+        Field::$types = [];
     }
 
     public function testConstruct()
@@ -26,12 +23,15 @@ class FieldsTest extends TestCase
             'test' => []
         ];
 
+        $page   = new Page(['slug' => 'test']);
         $fields = new Fields([
             'a' => [
-                'type' => 'test'
+                'type' => 'test',
+                'model' => $page
             ],
             'b' => [
-                'type' => 'test'
+                'type' => 'test',
+                'model' => $page
             ],
         ]);
 

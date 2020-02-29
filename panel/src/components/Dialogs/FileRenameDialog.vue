@@ -18,7 +18,6 @@
 
 <script>
 import DialogMixin from "@/mixins/dialog.js";
-import slug from "@/helpers/slug.js";
 
 export default {
   mixins: [DialogMixin],
@@ -69,18 +68,26 @@ export default {
         });
     },
     sluggify(input) {
-      return slug(input, [this.slugs, this.system.ascii], ".");
+      return this.$helper.slug(input, [this.slugs, this.system.ascii], "@._-");
     },
     submit() {
+      // prevent empty name with just spaces
+      this.file.name = this.file.name.trim();
+
+      if (this.file.name.length === 0) {
+        this.$refs.dialog.error(this.$t("error.file.changeName.empty"));
+        return;
+      }
+
       this.$api.files
         .rename(this.parent, this.file.filename, this.file.name)
         .then(file => {
 
           // move form changes
-          this.$store.dispatch("form/move", {
-            old: this.$store.getters["form/id"](this.file.id),
-            new: this.$store.getters["form/id"](file.id)
-          });
+          this.$store.dispatch("content/move", [
+            "files/" + this.file.id, 
+            "files/" + file.id
+          ]);
 
           this.$store.dispatch("notification/success", ":)");
           this.$emit("success", file);

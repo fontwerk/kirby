@@ -29,7 +29,7 @@ export default {
         fields.locale = {
           label: fields.locale.label,
           type: "info",
-          text: "You are using a custom locale set up. Please modify it in the language file in /site/languages"
+          text: this.$t("language.locale.warning")
         };
       }
 
@@ -58,7 +58,12 @@ export default {
           this.$store.dispatch('notification/error', error);
         });
     },
-    submit() {
+    submit() { 
+      if (this.language.name.length === 0) {
+        this.$refs.dialog.error(this.$t("error.language.name"));
+        return;
+      }
+
       this.$api
         .patch("languages/" + this.language.code, {
           name: this.language.name,

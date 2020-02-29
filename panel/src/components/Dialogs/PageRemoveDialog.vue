@@ -82,7 +82,7 @@ export default {
         .delete(this.page.id, { force: true })
         .then(() => {
           // remove data from cache
-          this.$store.dispatch("form/remove", "pages/" + this.page.id);
+          this.$store.dispatch("content/remove", "pages/" + this.page.id);
 
           const payload = {
             message: ":)",
@@ -95,7 +95,7 @@ export default {
             this.page.id === this.$route.params.path.replace(/\+/g, "/")
           ) {
             if (this.page.parent) {
-              payload.route = "/pages/" + this.page.parent.id;
+              payload.route = this.$api.pages.link(this.page.parent.id);
             } else {
               payload.route = "/pages";
             }

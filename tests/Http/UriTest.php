@@ -7,6 +7,8 @@ use PHPUnit\Framework\TestCase;
 class UriTest extends TestCase
 {
     protected $_SERVER = null;
+    protected $example1;
+    protected $example2;
 
     protected function setUp(): void
     {
@@ -57,7 +59,7 @@ class UriTest extends TestCase
     public function testCurrentWithHostInRequestUri()
     {
         $_SERVER['HTTP_HOST'] = 'ktest.loc';
-        $_SERVER['REQUEST_URI'] = '/ktest.loc/';
+        $_SERVER['REQUEST_URI'] = 'http://ktest.loc/';
 
         $uri = Uri::current();
         $this->assertEquals('/', $uri->toString());
@@ -67,7 +69,7 @@ class UriTest extends TestCase
     public function testCurrentWithHostAndPathInRequestUri()
     {
         $_SERVER['HTTP_HOST'] = 'ktest.loc';
-        $_SERVER['REQUEST_URI'] = '/ktest.loc/a/b';
+        $_SERVER['REQUEST_URI'] = 'http://ktest.loc/a/b';
 
         $uri = Uri::current();
         $this->assertEquals('/a/b', $uri->toString());
@@ -77,16 +79,26 @@ class UriTest extends TestCase
     public function testCurrentWithHostAndSchemeInRequestUri()
     {
         $_SERVER['HTTP_HOST'] = 'ktest.loc';
-        $_SERVER['REQUEST_URI'] = '/http://ktest.loc/';
+        $_SERVER['REQUEST_URI'] = 'http://ktest.loc/';
 
         $uri = Uri::current();
         $this->assertEquals('/', $uri->toString());
         $this->assertEquals('', $uri->path());
     }
 
+    public function testCurrentWithHostInPath()
+    {
+        $_SERVER['HTTP_HOST'] = 'ktest.loc';
+        $_SERVER['REQUEST_URI'] = 'http://ktest.loc/a/b/ktest.loc';
+
+        $uri = Uri::current();
+        $this->assertEquals('/a/b/ktest.loc', $uri->toString());
+        $this->assertEquals('a/b/ktest.loc', $uri->path());
+    }
+
     public function testValidScheme()
     {
-        $url = new Uri;
+        $url = new Uri();
 
         $url->setScheme('http');
         $this->assertEquals('http', $url->scheme());
@@ -100,13 +112,13 @@ class UriTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Invalid URL scheme: abc');
 
-        $url = new Uri;
+        $url = new Uri();
         $url->setScheme('abc');
     }
 
     public function testValidHost()
     {
-        $url = new Uri;
+        $url = new Uri();
 
         $url->setHost('getkirby.com');
         $this->assertEquals('getkirby.com', $url->host());
@@ -126,7 +138,7 @@ class UriTest extends TestCase
 
     public function testIsNotAbsolute()
     {
-        $url = new Uri;
+        $url = new Uri();
         $this->assertFalse($url->isAbsolute());
     }
 
@@ -239,7 +251,7 @@ class UriTest extends TestCase
 
     public function testBaseWithoutHost()
     {
-        $url = new Uri;
+        $url = new Uri();
         $this->assertEquals(null, $url->base());
     }
 

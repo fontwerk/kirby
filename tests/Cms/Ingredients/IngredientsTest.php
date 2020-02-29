@@ -6,6 +6,8 @@ use PHPUnit\Framework\TestCase;
 
 class IngredientsTest extends TestCase
 {
+    protected $ingredients;
+
     public function setUp(): void
     {
         $this->ingredients = Ingredients::bake([
@@ -36,6 +38,6 @@ class IngredientsTest extends TestCase
         ];
 
         $this->assertEquals($expected, $this->ingredients->toArray());
-        $this->assertEquals($expected, $this->ingredients->__debuginfo());
+        $this->assertEquals($expected, $this->ingredients->__debugInfo());
     }
 }

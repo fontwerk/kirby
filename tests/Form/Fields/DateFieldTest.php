@@ -2,13 +2,11 @@
 
 namespace Kirby\Form\Fields;
 
-use Kirby\Form\Field;
-
 class DateFieldTest extends TestCase
 {
     public function testDefaultProps()
     {
-        $field = new Field('date');
+        $field = $this->field('date');
 
         $this->assertEquals('date', $field->type());
         $this->assertEquals('date', $field->name());
@@ -21,7 +19,7 @@ class DateFieldTest extends TestCase
 
     public function testEmptyDate()
     {
-        $field = new Field('date', [
+        $field = $this->field('date', [
             'value' => null
         ]);
 
@@ -32,9 +30,9 @@ class DateFieldTest extends TestCase
     public function valueProvider()
     {
         return [
-            ['12.12.2012', date(DATE_W3C, strtotime('2012-12-12'))],
-            ['2016-11-21', date(DATE_W3C, strtotime('2016-11-21'))],
-            ['2016-11-21 12:12:12', date(DATE_W3C, strtotime('2016-11-21 12:10:00')), 5],
+            ['12.12.2012', date('Y-m-d H:i:s', strtotime('2012-12-12'))],
+            ['2016-11-21', date('Y-m-d H:i:s', strtotime('2016-11-21'))],
+            ['2016-11-21 12:12:12', date('Y-m-d H:i:s', strtotime('2016-11-21 12:10:00')), 5],
             ['something', null],
         ];
     }
@@ -42,14 +40,14 @@ class DateFieldTest extends TestCase
     public function testSave()
     {
         // default value
-        $field = new Field('date', [
+        $field = $this->field('date', [
             'value' => '12.12.2012',
         ]);
 
         $this->assertEquals('2012-12-12', $field->data());
 
         // with custom format
-        $field = new Field('date', [
+        $field = $this->field('date', [
             'format' => 'd.m.Y',
             'value'  => '12.12.2012',
         ]);
@@ -57,7 +55,7 @@ class DateFieldTest extends TestCase
         $this->assertEquals('12.12.2012', $field->data());
 
         // empty value
-        $field = new Field('date', [
+        $field = $this->field('date', [
             'value'  => null,
         ]);
 
@@ -69,7 +67,7 @@ class DateFieldTest extends TestCase
      */
     public function testValue($input, $expected, $step = null)
     {
-        $field = new Field('date', [
+        $field = $this->field('date', [
             'value' => $input,
             'time'  => ['step' => $step]
         ]);

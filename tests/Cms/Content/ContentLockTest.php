@@ -17,9 +17,8 @@ class ContentLockTest extends TestCase
             ],
             'site' => [
                 'children' => [
-                    [
-                        'slug'  => 'test'
-                    ]
+                    ['slug' => 'test'],
+                    ['slug' => 'foo']
                 ]
             ],
             'users' => [
@@ -83,9 +82,7 @@ class ContentLockTest extends TestCase
         $app = $this->app;
         $page = $app->page('test');
 
-        $this->assertEquals([
-            'locked' => false
-        ], $page->lock()->get());
+        $this->assertFalse($page->lock()->get());
     }
 
     public function testGetWithSameUser()
@@ -96,9 +93,7 @@ class ContentLockTest extends TestCase
         $app->impersonate('test@getkirby.com');
         $page->lock()->create();
 
-        $this->assertEquals([
-            'locked' => false
-        ], $page->lock()->get());
+        $this->assertFalse($page->lock()->get());
     }
 
     public function testGet()
@@ -111,9 +106,34 @@ class ContentLockTest extends TestCase
 
         $app->impersonate('homer@simpson.com');
         $data = $page->lock()->get();
+
         $this->assertFalse(empty($data));
-        $this->assertTrue($data['locked']);
+        $this->assertFalse($data['unlockable']);
         $this->assertEquals('test@getkirby.com', $data['email']);
+        $this->assertArrayHasKey('time', $data);
+    }
+
+    public function testGetUserMissing()
+    {
+        $app = $this->app;
+        $page = $app->page('test');
+
+        $app->impersonate('test@getkirby.com');
+        $page->lock()->create();
+        $this->assertFileExists($this->fixtures . '/content/test/.lock');
+
+        $app->impersonate('homer@simpson.com');
+        $data = $page->lock()->get();
+        $this->assertFileExists($this->fixtures . '/content/test/.lock');
+        $this->assertFalse(empty($data));
+        $this->assertFalse($data['unlockable']);
+        $this->assertEquals('test@getkirby.com', $data['email']);
+        $this->assertArrayHasKey('time', $data);
+
+        $app->users()->remove($app->user('test@getkirby.com'));
+        $data = $page->lock()->get();
+        $this->assertFileNotExists($this->fixtures . '/content/test/.lock');
+        $this->assertFalse($data);
     }
 
     public function testIsLocked()

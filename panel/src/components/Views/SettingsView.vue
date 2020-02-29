@@ -92,9 +92,10 @@ export default {
     }
   },
   created() {
-    this.fetch();
+    this.$store.dispatch("content/current", null);
     this.$store.dispatch("title", this.$t("view.settings"));
     this.$store.dispatch("breadcrumb", []);
+    this.fetch();
   },
   methods: {
     fetch() {
@@ -114,6 +115,9 @@ export default {
               icon: { type: "globe", back: "black" },
               text: language.name,
               info: language.code,
+              link: () => {
+                this.$refs.update.open(language.code);
+              },
               options: [
                 {
                   icon: "edit",

@@ -17,6 +17,7 @@
         :element="elements.list"
         :list="selected"
         :handle="true"
+        :data-invalid="isInvalid"
         @end="onInput"
       >
         <component
@@ -24,7 +25,8 @@
           :is="elements.item"
           :key="user.email"
           :sortable="!disabled && selected.length > 1"
-          :text="user.username"
+          :text="user.text"
+          :info="user.info"
           :link="$api.users.link(user.id)"
           :image="user.image"
           :icon="user.icon"
@@ -40,6 +42,7 @@
     </template>
     <k-empty
       v-else
+      :data-invalid="isInvalid"
       icon="users"
       @click="open"
     >
@@ -64,6 +67,7 @@ export default {
         endpoint: this.endpoints.field,
         max: this.max,
         multiple: this.multiple,
+        search: this.search,
         selected: this.selected.map(user => user.id)
       });
     }

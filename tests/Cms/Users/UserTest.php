@@ -8,6 +8,14 @@ class UserTestModel extends User
 {
 }
 
+class UserTestForceLocked extends User
+{
+    public function isLocked(): bool
+    {
+        return true;
+    }
+}
+
 class UserTest extends TestCase
 {
     public function testAvatar()
@@ -92,7 +100,7 @@ class UserTest extends TestCase
         ]);
 
         // create a user file
-        F::write($file = $index . '/test/index.php', 'test');
+        F::write($file = $index . '/test/index.php', '<?php return [];');
 
         $modified = filemtime($file);
         $user     = $app->user('test');
@@ -238,5 +246,64 @@ class UserTest extends TestCase
         $this->assertInstanceOf(UserTestModel::class, $user);
 
         User::$models = [];
+    }
+
+    public function testPanelOptions()
+    {
+        $user = new User([
+            'email' => 'test@getkirby.com',
+        ]);
+
+        $user->kirby()->impersonate('kirby');
+
+        $expected = [
+            'create'         => true,
+            'changeEmail'    => true,
+            'changeLanguage' => true,
+            'changeName'     => true,
+            'changePassword' => true,
+            'changeRole'     => false, // just one role
+            'delete'         => true,
+            'update'         => true,
+        ];
+
+        $this->assertEquals($expected, $user->panelOptions());
+    }
+
+    public function testPanelOptionsWithLockedUser()
+    {
+        $user = new UserTestForceLocked([
+            'email' => 'test@getkirby.com',
+        ]);
+
+        $user->kirby()->impersonate('kirby');
+
+        // without override
+        $expected = [
+            'create'         => false,
+            'changeEmail'    => false,
+            'changeLanguage' => false,
+            'changeName'     => false,
+            'changePassword' => false,
+            'changeRole'     => false,
+            'delete'         => false,
+            'update'         => false,
+        ];
+
+        $this->assertEquals($expected, $user->panelOptions());
+
+        // with override
+        $expected = [
+            'create'         => false,
+            'changeEmail'    => true,
+            'changeLanguage' => false,
+            'changeName'     => false,
+            'changePassword' => false,
+            'changeRole'     => false,
+            'delete'         => false,
+            'update'         => false,
+        ];
+
+        $this->assertEquals($expected, $user->panelOptions(['changeEmail']));
     }
 }

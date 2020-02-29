@@ -9,6 +9,14 @@ class FileTestModel extends File
 {
 }
 
+class FileTestForceLocked extends File
+{
+    public function isLocked(): bool
+    {
+        return true;
+    }
+}
+
 class FileTest extends TestCase
 {
     protected function defaults(): array
@@ -62,9 +70,36 @@ class FileTest extends TestCase
         ]);
 
         $file = $page->file('test.pdf');
-
         $this->assertEquals('(file: test.pdf)', $file->dragText());
-        $this->assertEquals('[test.pdf](test.pdf)', $file->dragText('markdown'));
+    }
+
+    public function testDragTextMarkdown()
+    {
+        $app = new App([
+            'roots' => [
+                'index' => '/dev/null'
+            ],
+            'options' => [
+                'panel' => [
+                    'kirbytext' => false
+                ]
+            ],
+            'site' => [
+                'children' => [
+                    [
+                        'slug' => 'test',
+                        'files' => [
+                            [
+                                'filename' => 'test.pdf'
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]);
+
+        $file = $app->page('test')->file('test.pdf');
+        $this->assertEquals('[test.pdf](test.pdf)', $file->dragText());
     }
 
     public function testDragTextForImages()
@@ -79,9 +114,36 @@ class FileTest extends TestCase
         ]);
 
         $file = $page->file('test.jpg');
-
         $this->assertEquals('(image: test.jpg)', $file->dragText());
-        $this->assertEquals('![](test.jpg)', $file->dragText('markdown'));
+    }
+
+    public function testDragTextForImagesMarkdown()
+    {
+        $app = new App([
+            'roots' => [
+                'index' => '/dev/null'
+            ],
+            'options' => [
+                'panel' => [
+                    'kirbytext' => false
+                ]
+            ],
+            'site' => [
+                'children' => [
+                    [
+                        'slug' => 'test',
+                        'files' => [
+                            [
+                                'filename' => 'test.jpg'
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]);
+
+        $file = $app->page('test')->file('test.jpg');
+        $this->assertEquals('![](test.jpg)', $file->dragText());
     }
 
     public function testFilename()
@@ -116,7 +178,7 @@ class FileTest extends TestCase
 
     public function testDefaultPage()
     {
-        return $this->assertNull($this->file()->page());
+        $this->assertNull($this->file()->page());
     }
 
     public function testUrl()
@@ -218,6 +280,56 @@ class FileTest extends TestCase
         ];
 
         $this->assertEquals($expected, $icon);
+    }
+
+    public function testPanelOptions()
+    {
+        $file = new File([
+            'filename' => 'test.jpg',
+        ]);
+
+        $file->kirby()->impersonate('kirby');
+
+        $expected = [
+            'changeName' => true,
+            'create'     => true,
+            'delete'     => true,
+            'replace'    => true,
+            'update'     => true,
+        ];
+
+        $this->assertEquals($expected, $file->panelOptions());
+    }
+
+    public function testPanelOptionsWithLockedFile()
+    {
+        $file = new FileTestForceLocked([
+            'filename' => 'test.jpg',
+        ]);
+
+        $file->kirby()->impersonate('kirby');
+
+        // without override
+        $expected = [
+            'changeName' => false,
+            'create'     => false,
+            'delete'     => false,
+            'replace'    => false,
+            'update'     => false,
+        ];
+
+        $this->assertEquals($expected, $file->panelOptions());
+
+        // with override
+        $expected = [
+            'changeName' => false,
+            'create'     => false,
+            'delete'     => true,
+            'replace'    => false,
+            'update'     => false,
+        ];
+
+        $this->assertEquals($expected, $file->panelOptions(['delete']));
     }
 
     public function testPanelUrl()
@@ -334,21 +446,5 @@ class FileTest extends TestCase
 
         $this->assertEquals('https://getkirby.com/api/users/test/files/user-file.jpg', $file->apiUrl());
         $this->assertEquals('users/test/files/user-file.jpg', $file->apiUrl(true));
-    }
-
-    public function testFileModel()
-    {
-        File::$models = [
-            'dummy' => FileTestModel::class
-        ];
-
-        $user = File::factory([
-            'filename' => 'test',
-            'model'    => 'dummy'
-        ]);
-
-        $this->assertInstanceOf(FileTestModel::class, $user);
-
-        File::$models = [];
     }
 }

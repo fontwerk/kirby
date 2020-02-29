@@ -25,19 +25,17 @@ class ValidationsTest extends TestCase
                 ]
             ]
         ];
-
-        Field::$mixins = [];
     }
 
     public function tearDown(): void
     {
-        Field::$types  = [];
-        Field::$mixins = [];
+        Field::$types = [];
     }
 
     public function testBooleanValid()
     {
-        $field = new Field('test');
+        $page  = new Page(['slug' => 'test']);
+        $field = new Field('test', ['model' => $page]);
         $this->assertTrue(Validations::boolean($field, true));
     }
 
@@ -46,13 +44,15 @@ class ValidationsTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Please confirm or deny');
 
-        $field = new Field('test');
+        $page  = new Page(['slug' => 'test']);
+        $field = new Field('test', ['model' => $page]);
         Validations::boolean($field, 'nope');
     }
 
     public function testDateValid()
     {
-        $field = new Field('test');
+        $page  = new Page(['slug' => 'test']);
+        $field = new Field('test', ['model' => $page]);
         $this->assertTrue(Validations::date($field, '2012-12-12'));
     }
 
@@ -61,13 +61,15 @@ class ValidationsTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Please enter a valid date');
 
-        $field = new Field('test');
+        $page  = new Page(['slug' => 'test']);
+        $field = new Field('test', ['model' => $page]);
         Validations::date($field, 'somewhen');
     }
 
     public function testEmailValid()
     {
-        $field = new Field('test');
+        $page  = new Page(['slug' => 'test']);
+        $field = new Field('test', ['model' => $page]);
         $this->assertTrue(Validations::email($field, 'test@getkirby.com'));
     }
 
@@ -76,13 +78,16 @@ class ValidationsTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Please enter a valid email address');
 
-        $field = new Field('test');
+        $page  = new Page(['slug' => 'test']);
+        $field = new Field('test', ['model' => $page]);
         Validations::email($field, 'test[at]getkirby.com');
     }
 
     public function testMaxValid()
     {
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
+            'model' => $page,
             'max' => 5
         ]);
 
@@ -94,8 +99,10 @@ class ValidationsTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Please enter a value equal to or lower than 5');
 
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
-            'max' => 5
+            'max' => 5,
+            'model' => $page
         ]);
 
         Validations::max($field, 6);
@@ -103,8 +110,10 @@ class ValidationsTest extends TestCase
 
     public function testMaxLengthValid()
     {
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
-            'maxlength' => 5
+            'maxlength' => 5,
+            'model' => $page
         ]);
 
         $this->assertTrue(Validations::maxlength($field, 'test'));
@@ -115,8 +124,10 @@ class ValidationsTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Please enter a shorter value. (max. 5 characters)');
 
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
-            'maxlength' => 5
+            'maxlength' => 5,
+            'model' => $page
         ]);
 
         Validations::maxlength($field, 'testest');
@@ -124,8 +135,10 @@ class ValidationsTest extends TestCase
 
     public function testMinValid()
     {
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
-            'min' => 5
+            'min' => 5,
+            'model' => $page
         ]);
 
         $this->assertTrue(Validations::min($field, 6));
@@ -136,8 +149,10 @@ class ValidationsTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Please enter a value equal to or greater than 5');
 
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
-            'min' => 5
+            'min' => 5,
+            'model' => $page
         ]);
 
         Validations::min($field, 4);
@@ -145,8 +160,10 @@ class ValidationsTest extends TestCase
 
     public function testMinLengthValid()
     {
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
-            'minlength' => 5
+            'minlength' => 5,
+            'model' => $page
         ]);
 
         $this->assertTrue(Validations::minlength($field, 'testest'));
@@ -157,17 +174,49 @@ class ValidationsTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Please enter a longer value. (min. 5 characters)');
 
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
-            'minlength' => 5
+            'minlength' => 5,
+            'model' => $page
         ]);
 
         Validations::minlength($field, 'test');
     }
 
+    public function testPatternValid()
+    {
+        $page  = new Page(['slug' => 'test']);
+        $field = new Field('test', [
+            'pattern' => '^#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$',
+            'model' => $page
+        ]);
+
+        $this->assertTrue(Validations::pattern($field, '#fff'));
+        $this->assertTrue(Validations::pattern($field, '#222'));
+        $this->assertTrue(Validations::pattern($field, '#afafaf'));
+        $this->assertTrue(Validations::pattern($field, '#34b3cd'));
+    }
+
+    public function testPatternInvalid()
+    {
+        $this->expectException('Kirby\Exception\InvalidArgumentException');
+        $this->expectExceptionMessage('The value does not match the expected pattern');
+
+        $page  = new Page(['slug' => 'test']);
+        $field = new Field('test', [
+            'pattern' => '^#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$',
+            'model' => $page
+        ]);
+
+        Validations::pattern($field, '#MMM');
+    }
+
     public function testRequiredValid()
     {
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
-            'required' => true
+            'required' => true,
+            'model' => $page
         ]);
 
         $this->assertTrue(Validations::required($field, 'something'));
@@ -178,8 +227,10 @@ class ValidationsTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Please enter something');
 
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
-            'required' => true
+            'required' => true,
+            'model' => $page
         ]);
 
         Validations::required($field, '');
@@ -187,11 +238,13 @@ class ValidationsTest extends TestCase
 
     public function testOptionValid()
     {
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
             'options' => [
                 ['value' => 'a'],
                 ['value' => 'b']
-            ]
+            ],
+            'model' => $page
         ]);
 
         $this->assertTrue(Validations::option($field, 'a'));
@@ -202,11 +255,13 @@ class ValidationsTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Please select a valid option');
 
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
             'options' => [
                 ['value' => 'a'],
                 ['value' => 'b']
-            ]
+            ],
+            'model' => $page
         ]);
 
         Validations::option($field, 'c');
@@ -214,11 +269,13 @@ class ValidationsTest extends TestCase
 
     public function testOptionsValid()
     {
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
             'options' => [
                 ['value' => 'a'],
                 ['value' => 'b']
-            ]
+            ],
+            'model' => $page
         ]);
 
         $this->assertTrue(Validations::options($field, ['a', 'b']));
@@ -229,11 +286,13 @@ class ValidationsTest extends TestCase
         $this->expectException('Kirby\Exception\InvalidArgumentException');
         $this->expectExceptionMessage('Please select a valid option');
 
+        $page  = new Page(['slug' => 'test']);
         $field = new Field('test', [
             'options' => [
                 ['value' => 'a'],
                 ['value' => 'b']
-            ]
+            ],
+            'model' => $page
         ]);
 
         Validations::options($field, ['a', 'c']);

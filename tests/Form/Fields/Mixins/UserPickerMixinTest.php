@@ -4,8 +4,6 @@ namespace Kirby\Form\Fields;
 
 use Kirby\Cms\App;
 use Kirby\Cms\Page;
-use Kirby\Cms\Site;
-use Kirby\Cms\User;
 use Kirby\Form\Field;
 
 class UserPickerMixinTest extends TestCase
@@ -35,7 +33,7 @@ class UserPickerMixinTest extends TestCase
                 'mixins'  => ['userpicker'],
                 'methods' => [
                     'users' => function () {
-                        return $this->userpicker();
+                        return $this->userpicker()['data'];
                     }
                 ]
             ]
@@ -45,7 +43,7 @@ class UserPickerMixinTest extends TestCase
             'slug' => 'test'
         ]);
 
-        $field = new Field('test', [
+        $field = $this->field('test', [
             'model' => $page
         ]);
 
@@ -66,7 +64,7 @@ class UserPickerMixinTest extends TestCase
                     'users' => function () {
                         return $this->userpicker([
                             'query' => 'kirby.users.role("editor")'
-                        ]);
+                        ])['data'];
                     }
                 ]
             ]
@@ -76,7 +74,7 @@ class UserPickerMixinTest extends TestCase
             'slug' => 'test'
         ]);
 
-        $field = new Field('test', [
+        $field = $this->field('test', [
             'model' => $page
         ]);
 
@@ -98,7 +96,7 @@ class UserPickerMixinTest extends TestCase
                             'map' => function ($user) {
                                 return $user->email();
                             }
-                        ]);
+                        ])['data'];
                     }
                 ]
             ]
@@ -108,7 +106,7 @@ class UserPickerMixinTest extends TestCase
             'slug' => 'test'
         ]);
 
-        $field = new Field('test', [
+        $field = $this->field('test', [
             'model' => $page
         ]);
 

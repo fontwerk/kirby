@@ -2,11 +2,12 @@
 
 namespace Kirby\Cms;
 
-use Kirby\Toolkit\I18n;
 use PHPUnit\Framework\TestCase;
 
 class FieldsSectionTest extends TestCase
 {
+    protected $app;
+
     public function setUp(): void
     {
         App::destroy();

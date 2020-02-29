@@ -4,13 +4,14 @@ namespace Kirby\Cms;
 
 use Kirby\Data\Data;
 use Kirby\Http\Route;
-use Kirby\Toolkit\F;
 
 /**
  * @coversDefaultClass \Kirby\Cms\App
  */
 class AppTest extends TestCase
 {
+    protected $fixtures;
+
     public function setUp(): void
     {
         $this->fixtures = __DIR__ . '/fixtures/AppTest';
@@ -91,6 +92,20 @@ class AppTest extends TestCase
         $this->assertEquals(2, $app->apply('does-not-exist', 2));
     }
 
+    public function testDebugInfo()
+    {
+        $app = new App();
+        $debuginfo = $app->__debugInfo();
+
+        $this->assertArrayHasKey('languages', $debuginfo);
+        $this->assertArrayHasKey('options', $debuginfo);
+        $this->assertArrayHasKey('request', $debuginfo);
+        $this->assertArrayHasKey('roots', $debuginfo);
+        $this->assertArrayHasKey('site', $debuginfo);
+        $this->assertArrayHasKey('urls', $debuginfo);
+        $this->assertArrayHasKey('version', $debuginfo);
+    }
+
     public function testDefaultRoles()
     {
         $app = new App([
@@ -100,6 +115,29 @@ class AppTest extends TestCase
         ]);
 
         $this->assertInstanceOf(Roles::class, $app->roles());
+    }
+
+    public function testEmail()
+    {
+        $app = new App([
+            'roots' => [
+                'index' => '/dev/null'
+            ]
+        ]);
+
+        $email = $app->email(
+            [
+                'from'    => 'test@getkirby.com',
+                'to'      => 'test@getkirby.com',
+                'body'    => 'test',
+                'subject' => 'Test'
+            ],
+            [
+                'debug'   => true
+            ]
+        );
+
+        $this->assertInstanceOf('Kirby\Email\PHPMailer', $email);
     }
 
     public function testOption()
@@ -155,6 +193,43 @@ class AppTest extends TestCase
         $this->assertEquals('B', $app->option('namespace.plugin.nested')['key']);
     }
 
+    public function testOptions()
+    {
+        App::destroy();
+
+        $app = new App([
+            'roots' => [
+                'index' => '/dev/null'
+            ],
+            'options' => $options = [
+                'a' => 'A',
+                'b' => 'B'
+            ]
+        ]);
+
+        $this->assertEquals($options, $app->options());
+    }
+
+    public function testOptionsOnReady()
+    {
+        App::destroy();
+
+        $app = new App([
+            'roots' => [
+                'index' => '/dev/null'
+            ],
+            'options' => [
+                'ready' => function ($kirby) {
+                    return [
+                        'test' => $kirby->root('index')
+                    ];
+                }
+            ]
+        ]);
+
+        $this->assertEquals('/dev/null', $app->option('test'));
+    }
+
     public function testRolesFromFixtures()
     {
         $app = new App([
@@ -205,23 +280,11 @@ class AppTest extends TestCase
         $this->assertInstanceOf(Route::class, $route);
     }
 
-    public function testIoWithString()
+    public function testInstance()
     {
-        $result = kirby()->io('test');
+        $instance = new App();
 
-        $this->assertEquals('test', $result->body());
-        $this->assertEquals(200, $result->code());
-        $this->assertEquals('text/html', $result->type());
-    }
-
-    public function testIoWithArray()
-    {
-        $input  = ['test' => 'response'];
-        $result = kirby()->io($input);
-
-        $this->assertEquals(json_encode($input), $result->body());
-        $this->assertEquals(200, $result->code());
-        $this->assertEquals('application/json', $result->type());
+        $this->assertEquals($instance, App::instance());
     }
 
     public function testFindPageFile()
@@ -349,5 +412,10 @@ class AppTest extends TestCase
         $this->assertEquals($expected, $app->blueprints('files'));
 
         Dir::remove($fixtures);
+    }
+
+    public function testVersionHash()
+    {
+        $this->assertEquals(md5(App::version()), App::versionHash());
     }
 }

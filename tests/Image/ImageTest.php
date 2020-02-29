@@ -18,20 +18,6 @@ class ImageTest extends TestCase
         $this->assertEquals('http://getkirby.com/cat.jpg', $image->url());
     }
 
-    public function testBase64()
-    {
-        $image  = $this->_image();
-        $base64 = file_get_contents(static::FIXTURES . '/image/base64.txt');
-        $this->assertEquals($base64, $image->base64());
-    }
-
-    public function testDataUri()
-    {
-        $image  = $this->_image();
-        $base64 = file_get_contents(static::FIXTURES . '/image/base64.txt');
-        $this->assertEquals('data:image/jpeg;base64,' . $base64, $image->dataUri());
-    }
-
     public function testHeader()
     {
         $image  = $this->_image();
@@ -47,8 +33,8 @@ class ImageTest extends TestCase
     public function testDownload()
     {
         $image  = $this->_image();
-        $this->assertInternalType('string', $image->download());
-        $this->assertInternalType('string', $image->download('meow.jpg'));
+        $this->assertIsString($image->download());
+        $this->assertIsString($image->download('meow.jpg'));
     }
 
     public function testExif()
@@ -87,6 +73,11 @@ class ImageTest extends TestCase
         $image  = $this->_image('circle.svg');
         $this->assertEquals(50, $image->dimensions()->width());
         $this->assertEquals(50, $image->dimensions()->height());
+
+        // webp
+        $image  = $this->_image('valley.webp');
+        $this->assertEquals(550, $image->dimensions()->width());
+        $this->assertEquals(368, $image->dimensions()->height());
 
         // non-image file
         $image  = $this->_image('blank.pdf');
@@ -149,13 +140,13 @@ class ImageTest extends TestCase
     public function testToArray()
     {
         $image  = $this->_image();
-        $this->assertInternalType('array', $image->toArray());
+        $this->assertIsArray($image->toArray());
     }
 
     public function testToJson()
     {
         $image  = $this->_image();
-        $this->assertInternalType('string', $image->toJson());
+        $this->assertIsString($image->toJson());
     }
 
     public function testToString()
@@ -167,6 +158,6 @@ class ImageTest extends TestCase
     public function testDebuginfo()
     {
         $image  = $this->_image();
-        $this->assertInternalType('array', $image->__debuginfo());
+        $this->assertIsArray($image->__debugInfo());
     }
 }
